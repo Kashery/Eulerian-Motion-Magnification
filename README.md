@@ -28,8 +28,3 @@ Required packages: g++, CMake, OpenCV, Boost
 ### Running the program with test params
 	$ cd <PROJ_DIR>
 	$ ./bin/Eulerian_Motion_Magnification test/test_baby.param
-	
-## Adaptations:
-This project has been adapted by:
-
-1. [https://github.com/katiewasnothere/bwi_pulse_detector](https://github.com/katiewasnothere/bwi_pulse_detector)
