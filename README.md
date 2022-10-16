@@ -16,8 +16,7 @@ The code includes the following spatial and temporal filters:
 |-------------------|---------------------------|
 | Laplacian pyramid | Second-order IIR bandpass |
 
-Library Used: OpenCV, Boost
-	
+Library Used: OpenCV4, Boost
 
 ## Compiling and Running the code:
 Required packages: g++, CMake, OpenCV, Boost
@@ -28,3 +27,7 @@ Required packages: g++, CMake, OpenCV, Boost
 ### Running the program with test params
 	$ cd <PROJ_DIR>
 	$ ./bin/Eulerian_Motion_Magnification test/test_baby.param
+
+## Goal
+The goal of this is to expand the base eulerian motion magnification algorithm so that it becomes a basis for complete tool with uses in medicine, large machine maintenance and others.
+Apart from the obvious cool looking results, the plan is to build a detection pipeline that would alert and notice maintainers about possible flaw in machinery due to detected vibrations or in a hospital setting (pulse detection).
