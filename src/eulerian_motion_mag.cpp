@@ -193,8 +193,12 @@ void EulerianMotionMag::run()
 
         // denoise output
         // denoise(img_motion_mag_);
+
+        // compound results into one array
         cv::Mat compount_img_;
         compoundResults(img_motion_mag_, img_input_, difference, compount_img_);
+
+        // display and write result
         imshow(DISPLAY_WINDOW_NAME, compount_img_);
         if (write_output_file_)
             output_cap_->write(compount_img_);
