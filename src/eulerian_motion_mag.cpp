@@ -13,9 +13,7 @@
 
 #include "eulerian_motion_mag.h"
 
-#define DISPLAY_WINDOW_NAME_MAG "Motion Magnified Output"
-#define DISPLAY_WINDOW_NAME_SOURCE "Source"
-#define DISPLAY_WINDOW_NAME_DIFF "Difference"
+#define DISPLAY_WINDOW_NAME "Motion Magnification"
 
 EulerianMotionMag::EulerianMotionMag()
         : input_file_name_()
@@ -75,9 +73,7 @@ bool EulerianMotionMag::init()
 
     // Output:
     // Output Display Window
-    namedWindow(DISPLAY_WINDOW_NAME_MAG, cv::WINDOW_AUTOSIZE);
-    namedWindow(DISPLAY_WINDOW_NAME_SOURCE, cv::WINDOW_AUTOSIZE);
-    namedWindow(DISPLAY_WINDOW_NAME_DIFF, cv::WINDOW_AUTOSIZE);
+    namedWindow(DISPLAY_WINDOW_NAME, cv::WINDOW_AUTOSIZE);
     if (output_img_width_ <= 0 || output_img_height_ <= 0)
     {
         // Use input image size for output
@@ -197,12 +193,11 @@ void EulerianMotionMag::run()
 
         // denoise output
         // denoise(img_motion_mag_);
-
-        imshow(DISPLAY_WINDOW_NAME_MAG, img_motion_mag_);
-        imshow(DISPLAY_WINDOW_NAME_SOURCE, img_input_);
-        imshow(DISPLAY_WINDOW_NAME_DIFF, difference);
+        cv::Mat compount_img_;
+        compoundResults(img_motion_mag_, img_input_, difference, compount_img_);
+        imshow(DISPLAY_WINDOW_NAME, compount_img_);
         if (write_output_file_)
-            output_cap_->write(img_motion_mag_);
+            output_cap_->write(compount_img_);
 
         frame_num_++;
         loop_time_ms_ = timer_.getTimeMilliSec();
@@ -303,9 +298,9 @@ void EulerianMotionMag::attenuate(cv::Mat& src, cv::Mat& dst)
 }
 
 /// @brief applies difference method comparing two arrays and enclosing them in bounding boxes.
-/// @param src source or base array.
-/// @param applied array with changes to be detected.
-/// @param dst destination.
+/// @param src      source or base array.
+/// @param applied  array with changes to be detected.
+/// @param dst      destination.
 void EulerianMotionMag::diff(cv::Mat& src, cv::Mat& applied, cv::Mat&dst)
 {
     // Duplicate both source and applied magnification in order to avoid cross influence of difference and magnification itself
@@ -343,8 +338,28 @@ void EulerianMotionMag::diff(cv::Mat& src, cv::Mat& applied, cv::Mat&dst)
 }
 
 /// @brief simple denoising.
-/// @param src input/output array;
+/// @param src      input/output array;
 void EulerianMotionMag::denoise(cv::Mat& src)
 {
     cv::fastNlMeansDenoisingColored(src, src, 10, 10, 7, 21);
+}
+
+/// @brief  Compounds 3 source images into one first two will be 0.25 scale on top next to eachother and the third onw will be placed at 0.5 scale below them, creating base resolution compound image.
+///         NOTE: This method is very assuming and does a lot of possibly unnecessary .copy()
+/// @param img1     top left array
+/// @param img2     top right array
+/// @param img3     bottom array
+/// @param dst      output
+void EulerianMotionMag::compoundResults(cv::Mat& img1, cv::Mat& img2, cv::Mat& img3, cv::Mat& dst)
+{
+    cv::Mat img1_tmp = img1.clone();
+    cv::Mat img2_tmp = img2.clone();
+    cv::Mat img3_tmp = img3.clone();
+    cv::Mat dst_tmp = dst.clone();
+
+    cv::hconcat(img1_tmp,img2_tmp,dst);
+    resize(dst, dst, cv::Size(output_img_width_*2, output_img_height_));
+    resize(img3_tmp,img3_tmp,cv::Size(output_img_width_*2, output_img_height_*2));
+    cv::vconcat(dst,img3_tmp,dst);
+    resize(dst,dst,cv::Size(output_img_width_, output_img_height_));
 }

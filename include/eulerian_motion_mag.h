@@ -47,6 +47,7 @@ class EulerianMotionMag
     void attenuate(cv::Mat& src, cv::Mat& dst);
     void diff(cv::Mat& src, cv::Mat& applied, cv::Mat&dst);
     void denoise(cv::Mat& src);
+    void compoundResults(cv::Mat& img1, cv::Mat& img2, cv::Mat& img3, cv::Mat& dst);
 
  public:
     const std::string& getInputFileName() const { return input_file_name_; }
