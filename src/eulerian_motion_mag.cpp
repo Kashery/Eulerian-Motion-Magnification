@@ -13,7 +13,9 @@
 
 #include "eulerian_motion_mag.h"
 
-#define DISPLAY_WINDOW_NAME "Motion Magnified Output"
+#define DISPLAY_WINDOW_NAME_MAG "Motion Magnified Output"
+#define DISPLAY_WINDOW_NAME_SOURCE "Source"
+#define DISPLAY_WINDOW_NAME_DIFF "Difference"
 
 EulerianMotionMag::EulerianMotionMag()
         : input_file_name_()
@@ -73,7 +75,9 @@ bool EulerianMotionMag::init()
 
     // Output:
     // Output Display Window
-    namedWindow(DISPLAY_WINDOW_NAME, cv::WINDOW_AUTOSIZE);
+    namedWindow(DISPLAY_WINDOW_NAME_MAG, cv::WINDOW_AUTOSIZE);
+    namedWindow(DISPLAY_WINDOW_NAME_SOURCE, cv::WINDOW_AUTOSIZE);
+    namedWindow(DISPLAY_WINDOW_NAME_DIFF, cv::WINDOW_AUTOSIZE);
     if (output_img_width_ <= 0 || output_img_height_ <= 0)
     {
         // Use input image size for output
@@ -172,7 +176,7 @@ void EulerianMotionMag::run()
 
         // 5. attenuate I, Q channels
         attenuate(img_motion_, img_motion_);
-
+        
         // 6. combine source frame and motion image
         if (frame_num_ > 0)  // don't amplify first frame
             img_spatial_filter_ += img_motion_;
@@ -184,8 +188,19 @@ void EulerianMotionMag::run()
 
         // resize output image
         resize(img_motion_mag_, img_motion_mag_, cv::Size(output_img_width_, output_img_height_));
+        resize(img_input_, img_input_, cv::Size(output_img_width_, output_img_height_));
 
-        imshow(DISPLAY_WINDOW_NAME, img_motion_mag_);
+        // get difference between the two
+
+        cv::Mat difference;
+        diff(img_motion_mag_, img_input_, difference);
+
+        // denoise output
+        // denoise(img_motion_mag_);
+
+        imshow(DISPLAY_WINDOW_NAME_MAG, img_motion_mag_);
+        imshow(DISPLAY_WINDOW_NAME_SOURCE, img_input_);
+        imshow(DISPLAY_WINDOW_NAME_DIFF, difference);
         if (write_output_file_)
             output_cap_->write(img_motion_mag_);
 
@@ -285,4 +300,51 @@ void EulerianMotionMag::attenuate(cv::Mat& src, cv::Mat& dst)
     planes[1] = planes[1] * chrom_attenuation_;
     planes[2] = planes[2] * chrom_attenuation_;
     merge(planes, 3, dst);
+}
+
+/// @brief applies difference method comparing two arrays and enclosing them in bounding boxes.
+/// @param src source or base array.
+/// @param applied array with changes to be detected.
+/// @param dst destination.
+void EulerianMotionMag::diff(cv::Mat& src, cv::Mat& applied, cv::Mat&dst)
+{
+    // Duplicate both source and applied magnification in order to avoid cross influence of difference and magnification itself
+    cv::Mat src_cpy = src.clone();
+    cv::cvtColor(src_cpy, src_cpy, cv::COLOR_BGR2GRAY);
+
+    cv::Mat applied_cpy = applied.clone();
+    cv::cvtColor(applied_cpy, applied_cpy, cv::COLOR_BGR2GRAY);
+
+    // Calculate simple difference between source and applied magnification
+    cv::Mat diff;
+    cv::absdiff(src_cpy, applied_cpy, diff);
+
+    // Calculate threshhold eliminating small differences coming from the noise on applied magnification
+    // TODO: enclose cut-off value in params
+    cv::Mat thresh;
+    cv::threshold(diff, thresh, 55, 255, cv::THRESH_BINARY_INV | cv::THRESH_TOZERO);
+
+    // Prepare and find contours for later detection
+    std::vector<std::vector<cv::Point>> contours;
+    std::vector<cv::Vec4i> hierarchy;
+
+    cv::findContours(thresh, contours, hierarchy, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
+
+    // Use applied magnification Mat or source Mat as base for ploting boxes in dst
+    dst = applied.clone();
+    // dst = src.clone();
+
+    // Put bounding boxes on and apply them to dst Mat
+    for(std::vector<cv::Point> cont: contours)
+    {   
+        cv::Rect box = boundingRect(cont);
+        rectangle(dst, box, cv::Scalar(255, 0, 0));
+    }
+}
+
+/// @brief simple denoising.
+/// @param src input/output array;
+void EulerianMotionMag::denoise(cv::Mat& src)
+{
+    cv::fastNlMeansDenoisingColored(src, src, 10, 10, 7, 21);
 }

@@ -24,6 +24,7 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/photo.hpp>
 
 #include "timer.h"
 
@@ -44,6 +45,8 @@ class EulerianMotionMag
     void temporalIIRFilter(const cv::Mat& src, cv::Mat& dst, int level);
     void amplify(const cv::Mat& src, cv::Mat& dst, int level);
     void attenuate(cv::Mat& src, cv::Mat& dst);
+    void diff(cv::Mat& src, cv::Mat& applied, cv::Mat&dst);
+    void denoise(cv::Mat& src);
 
  public:
     const std::string& getInputFileName() const { return input_file_name_; }
