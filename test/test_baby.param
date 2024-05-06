@@ -1,7 +1,7 @@
 ### Params: baby video
 
-input_filename		= data/baby.mp4
-output_filename		= data/baby_mag.mp4
+input_filename		= /home/freydik/masters/Eulerian-Motion-Magnification/data/baby.mp4
+output_filename		= ./data/baby_mag.mp4
 
 input_width			= 640
 input_height		= 480
@@ -16,4 +16,4 @@ chrom_attenuation	= 0.1
 exaggeration_factor	= 10.0
 delta				= 0
 lambda				= 0
-levels				= 6
+levels				= 5

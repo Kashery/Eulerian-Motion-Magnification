@@ -16,7 +16,7 @@
 
 #include <boost/program_options.hpp>
 
-#include "eulerian_motion_mag.h"
+#include "euler_mag.hpp"
 
 namespace po = boost::program_options;
 
@@ -77,35 +77,31 @@ int main(int argc, char **argv)
     po::notify(vm);
 
     // EulerianMotionMag
-    EulerianMotionMag* motion_mag = new EulerianMotionMag();
+   
+    EulerMag* euler_mag = new EulerMag();
 
-    // Set params
-    motion_mag->setInputFileName(input_filename);
-    motion_mag->setOutputFileName(output_filename);
-    motion_mag->setInputImgWidth(input_width);
-    motion_mag->setInputImgHeight(input_height);
-    motion_mag->setOutputImgWidth(output_width);
-    motion_mag->setOutputImgHeight(output_height);
-    motion_mag->setAlpha(alpha);
-    motion_mag->setLambdaC(lambda_c);
-    motion_mag->setCutoffFreqLow(cutoff_freq_low);
-    motion_mag->setCutoffFreqHigh(cutoff_freq_high);
-    motion_mag->setChromAttenuation(chrom_attenuation);
-    motion_mag->setExaggerationFactor(exaggeration_factor);
-    motion_mag->setDelta(delta);
-    motion_mag->setLambda(lambda);
-    motion_mag->setLapPyramidLevels(levels);
+ 
+
+    euler_mag->setInputFilename(input_filename);
+    euler_mag->setAlpha(alpha);
+    euler_mag->setLambdaC(lambda_c);
+    euler_mag->setCutoffFreqLow(cutoff_freq_low);
+    euler_mag->setCutoffFreqHigh(cutoff_freq_high);
+    euler_mag->setChromAttenuation(chrom_attenuation);
+    euler_mag->setExaggerationFactor(exaggeration_factor);
+    euler_mag->setDelta(delta);
+    euler_mag->setLambda(lambda);
+    euler_mag->setLapPyramidLevels(levels);
 
     // Init Motion Magnification object
-    bool init_status = motion_mag->init();
-    if (!init_status)
+    if(!euler_mag->init())
         return 1;
 
     // Run Motion Magnification
-    motion_mag->run();
+    euler_mag->run();
 
     // Exit
-    delete motion_mag;
+    delete euler_mag;
     return 0;
 }
 

@@ -36,9 +36,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin)
 # Executable
 add_executable(${PROJECT_NAME}
         src/main.cpp
-        src/eulerian_motion_mag.cpp
-        include/eulerian_motion_mag.h
-        include/timer.h)
+        src/euler_mag.cpp
+        include/timer.h
+        include/euler_mag.hpp)
 
 # Link libraries
 target_link_libraries(${PROJECT_NAME}
