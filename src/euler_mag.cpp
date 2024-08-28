@@ -1,5 +1,5 @@
 #include "euler_mag.hpp"
-
+#include <math.h>
 #define DISPLAY_WINDOW "Euler Mag"
 
 EulerMag::EulerMag()
@@ -48,6 +48,25 @@ bool EulerMag::init()
     _frame_count = _input->get(cv::CAP_PROP_FRAME_COUNT);
     _input_fps = _input->get(cv::CAP_PROP_FPS);
 
+    double omegaL = (2 * M_PI * _cutoff_frequency_low) / _input_fps;
+    double omegaH = (2 * M_PI * _cutoff_frequency_high) / _input_fps;
+    std::cout<<_input_fps<<std::endl;
+
+    double omegaL_pass = tan(omegaL/2);
+    double omegaH_pass = tan(omegaH/2);
+
+    double omega0 = sqrt(omegaL_pass*omegaH_pass);
+    double omegaB = omegaH_pass - omegaL_pass;
+
+    b0 = omegaB/(1+omegaB);
+    b1 = 0;
+    b2 = -b0;
+
+    a1 = 0.0;
+    a2 = 0.0;
+    // a1 = -2*cos(omega0) * 1/(1+ omegaB);
+    // a2 = (1-omegaB)/(1+omegaB);
+
     // Instantiate output preview window
     cv::namedWindow(DISPLAY_WINDOW, cv::WINDOW_AUTOSIZE);
 
@@ -78,7 +97,9 @@ bool EulerMag::init()
 }
 
 void EulerMag::run()
-{int frame =0;
+{
+
+    int frame =0;
     while (1)
     {
         timer_.start();
@@ -105,14 +126,21 @@ void EulerMag::run()
             _lowpass_1 = _laplacian_pyramid;
             _lowpass_2 = _laplacian_pyramid;
             _filtered = _laplacian_pyramid;
+            _filtered_p = _laplacian_pyramid;
+            _laplacian_pyramid_p = _laplacian_pyramid;
+            _laplacian_pyramid_pp = _laplacian_pyramid;
+
         }
         else
         {
             temporalFilter();
-            
-            
+            _laplacian_pyramid_p = _laplacian_pyramid;
+            _laplacian_pyramid_pp = _laplacian_pyramid_p;
             _delta = _lambda_c / 8.0 / (1.0 + _alpha);
             _lambda = sqrt((float)(_input_img_width * _input_img_width + _input_img_height * _input_img_height)) / 3.0;
+            std::cout<<_input_img_height<<std::endl;
+            // std::cout<<_delta<<std::endl;
+            
             amplify();
         }
         reconstructFromLaplacianPyramid();
@@ -122,7 +150,7 @@ void EulerMag::run()
             cv::cuda::add(_input_frame, _motion, _input_frame);
         }
         frame ++;
-        // _input_frame = ;
+        // _input_frame = _motion;
         cv::cuda::cvtColor(_input_frame, _input_frame, cv::COLOR_Lab2BGR);
         _input_frame.convertTo(_input_frame, CV_8UC3, 255.0, 1.0 / 255.0);
         _input_frame.download(_output_frame);
@@ -132,7 +160,7 @@ void EulerMag::run()
             _output->write(_output_frame);
 
         double loop_time_ms_ = timer_.getTimeMilliSec();
-        std::cout << " | Time taken: " << loop_time_ms_ << " ms" << std::endl;
+        // std::cout << " | Time taken: " << loop_time_ms_ << " ms" << std::endl;
         char c = cv::waitKey(1);
         if (c == 27)
             break;
@@ -193,13 +221,34 @@ void EulerMag::temporalFilter()
     
 }
 
+void EulerMag::temporalFilterButter()
+{
+    for (size_t i = 0; i < _laplacian_pyramid_depth; ++i)
+    {
+        cv::cuda::GpuMat tmp_1, tmp_2, tmp_3, tmp_4, tmp_5;
+        cv::cuda::addWeighted(_laplacian_pyramid[i], b0, _laplacian_pyramid_p[i], b1,0, tmp_1);
+        cv::cuda::addWeighted(tmp_1, 1.0, _laplacian_pyramid_pp[i], b2,0,tmp_3);
+        cv::cuda::addWeighted(tmp_3,1.0,_filtered[i],-a1, 0, tmp_4);
+        tmp_5 = _filtered[i];
+        cv::cuda::addWeighted(tmp_4,1.0,_filtered_p[i], -a2, 0, _filtered[i]);
+        _filtered_p[i] = tmp_5;
+
+        // _lowpass_1[i] = tmp_1;
+        // _lowpass_2[i] = tmp_2;
+        // cv::cuda::subtract(_lowpass_1[i],_lowpass_2[i],_filtered[i]);
+    }
+}
+
 void EulerMag::amplify()
 {
     for (int i = _laplacian_pyramid_depth; i >= 0; i--)
     {
         double alpha;
+        
         alpha = _lambda / _delta / 8.0 - 1.0;
+
         alpha *= _exaggeration;
+        // std::cout<<_lambda<<std::endl;
         if (i == _laplacian_pyramid_depth || i == 0)
         {
             _filtered[i].convertTo(_filtered[i],_filtered[i].type(), 0);
@@ -233,6 +282,7 @@ void EulerMag::attenuate()
     cv::cuda::GpuMat channels[3];
     cv::cuda::split(_motion, channels);
     channels[1].convertTo(channels[1], channels[1].type(), _chromatic_attenuation);
-    channels[2].convertTo(channels[2], channels[2].type(), _chromatic_attenuation);
+    // channels[2].convertTo(channels[2], channels[2].type(), _chromatic_attenuation);
+    // channels[0].convertTo(channels[0], channels[0].type(), _chromatic_attenuation);
     cv::cuda::merge(channels, 3, _motion);
 }

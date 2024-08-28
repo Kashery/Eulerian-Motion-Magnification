@@ -60,6 +60,7 @@ class EulerMag
     int getCodecNumber(std::string file_name);
     void makeLaplacianPyramid();
     void temporalFilter();
+    void temporalFilterButter();
     void amplify();
     void reconstructFromLaplacianPyramid();
     void attenuate();
@@ -75,12 +76,15 @@ class EulerMag
 
     // Laplacian Pyramid
     std::vector<cv::cuda::GpuMat> _laplacian_pyramid;
+    std::vector<cv::cuda::GpuMat> _laplacian_pyramid_p;
+    std::vector<cv::cuda::GpuMat> _laplacian_pyramid_pp;
     int _laplacian_pyramid_depth;
 
     // Temporal Filter
     std::vector<cv::cuda::GpuMat> _lowpass_1;
     std::vector<cv::cuda::GpuMat> _lowpass_2;
     std::vector<cv::cuda::GpuMat> _filtered;
+    std::vector<cv::cuda::GpuMat> _filtered_p;
     double _cutoff_frequency_high;
     double _cutoff_frequency_low;
     cv::cuda::GpuMat _motion;
@@ -100,6 +104,8 @@ class EulerMag
     double _delta;
     double _exaggeration;
     double _lambda;
+    double b0, b1, b2;
+    double a1, a2;
 
     Timer timer_;
 

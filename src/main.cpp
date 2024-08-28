@@ -92,6 +92,8 @@ int main(int argc, char **argv)
     euler_mag->setDelta(delta);
     euler_mag->setLambda(lambda);
     euler_mag->setLapPyramidLevels(levels);
+    euler_mag->setOutputFileName(output_filename);
+
 
     // Init Motion Magnification object
     if(!euler_mag->init())

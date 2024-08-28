@@ -1,0 +1,10 @@
+v = VideoReader('out.mkv');
+currAxes = axes;
+plotframe;
+while hasFrame(v)
+  frame = readFrame(v);
+  F=  insertShape(frame,"line",[450 400 450 500],"ShapeColor","blue");
+  imshow(F, 'Parent', currAxes)
+  currAxes.Visible = 'off';
+  pause(1/v.FrameRate);
+end
